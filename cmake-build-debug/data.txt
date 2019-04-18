@@ -1,8 +1,0 @@
-seat_num = 250
-tel_num = 8
-seat_low = 1
-seat_high = 5
-wait_low = 5
-wait_high = 10
-success_prob = 90
-cost = 20
