@@ -1,10 +1,13 @@
 #include "initialization_functions.h"
+#include "../Global_structs/Global_Structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 FILE *Open_file();
+
+void Initialize_seat_array(const struct Global_data *global_data, Init_file_data *file_data);
 
 void check_Arguments_number(int argc){
 
@@ -85,4 +88,56 @@ Init_file_data Get_data_from_file(){
 
 
 }
+
+void Init_mutex_and_check(pthread_mutex_t mutex){
+  if(pthread_mutex_init(&mutex,NULL)){
+    printf("Mutex init error");
+    exit(-1);
+  }
+
+}
+
+void Init_cond_and_check(pthread_cond_t cond){
+  if(pthread_cond_init(&cond,NULL)){
+    printf("condition initialization error");
+    exit(-1);
+  }
+}
+
+void Initialize_mutexes(struct Mutexes_and_cond* mutexes_and_cond){
+
+  Init_mutex_and_check(mutexes_and_cond->Available_telephone);
+  Init_mutex_and_check(mutexes_and_cond->Bank_account_available);
+  Init_mutex_and_check(mutexes_and_cond->Update_transaction_counter);
+  Init_mutex_and_check(mutexes_and_cond->Update_wait_time);
+  Init_mutex_and_check(mutexes_and_cond->Update_throughput_time);
+  Init_mutex_and_check(mutexes_and_cond->Update_seats);
+  Init_mutex_and_check(mutexes_and_cond->Writing_in_stdout);
+  Init_cond_and_check(mutexes_and_cond->Telephone_cond);
+}
+
+
+void Initialize_seat_array(const struct Global_data *global_data, Init_file_data *file_data) {
+  for (int i = 0; i < (*file_data).Seats_number; i++) {
+    global_data->seats_array[i].Client_num = -1;
+    global_data->seats_array[i].curr_status = FREE;
+    global_data->seats_array[i].Seat_num = i + 1;
+  }
+}
+
+
+void Initialize_global_data(struct Global_data* global_data,Init_file_data file_data){
+
+  global_data->seats_array=malloc(file_data.Seats_number* sizeof(Seat));
+  Initialize_seat_array(global_data, &file_data);
+  global_data->telephones_available=file_data.Telephones_number;
+  global_data->seats_available=file_data.Seats_number;
+  global_data->S_low=file_data.S_low;
+  global_data->S_high=file_data.S_high;
+  global_data->wait_low=file_data.wait_low;
+  global_data->wait_high=file_data.wait_high;
+  global_data->Prob_success=file_data.success_prob;
+  global_data->Seat_cost=file_data.seat_cost;
+}
+
 
