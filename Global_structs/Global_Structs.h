@@ -25,13 +25,10 @@ struct Mutexes_and_cond{
 struct Global_data {
   Seat* seats_array;
   int telephones_available;
+  int Money_collected;
   int seats_available;
-  int S_low;
-  int S_high;
-  int wait_low;
-  int wait_high;
-  int Prob_success;
-  int Seat_cost;
+  double total_wait_time;
+  double total_through_put_time;
 
 }typedef Global_data;
 

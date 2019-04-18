@@ -1,5 +1,6 @@
 #include "initialization_functions.h"
 #include "../Global_structs/Global_Structs.h"
+#include "Initialization_Data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,7 @@ void check_Arguments_number(int argc){
   }
 }
 
-Argumet_data Get_Arguments(int argc,char** argv){
+Argument_data Get_Arguments(int argc,char** argv){
 
   check_Arguments_number(argc);
   int clients_num;
@@ -43,7 +44,7 @@ Argumet_data Get_Arguments(int argc,char** argv){
     }
   }
 
-  Argumet_data data = {clients_num,seed};
+  Argument_data data = {clients_num,seed};
   return data;
 }
 
@@ -132,12 +133,8 @@ void Initialize_global_data(struct Global_data* global_data,Init_file_data file_
   Initialize_seat_array(global_data, &file_data);
   global_data->telephones_available=file_data.Telephones_number;
   global_data->seats_available=file_data.Seats_number;
-  global_data->S_low=file_data.S_low;
-  global_data->S_high=file_data.S_high;
-  global_data->wait_low=file_data.wait_low;
-  global_data->wait_high=file_data.wait_high;
-  global_data->Prob_success=file_data.success_prob;
-  global_data->Seat_cost=file_data.seat_cost;
+  global_data->total_wait_time=0.0;
+  global_data->total_through_put_time=0.0;
 }
 
 
