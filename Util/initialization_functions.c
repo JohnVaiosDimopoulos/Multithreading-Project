@@ -51,7 +51,7 @@ Argument_data Get_Arguments(int argc,char** argv){
 FILE *Open_file() {
 
   FILE *Initialization_file;
-  if ((Initialization_file = fopen("../Data_file/data.txt", "r")) == NULL) {
+  if ((Initialization_file = fopen("./Data_file/data.txt", "r")) == NULL) {
     printf("error at file opening");
     exit(-1);
   }
