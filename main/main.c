@@ -26,6 +26,4 @@ int main(int argc,char** argv) {
   //Ending phsase
   Print_Stats(data,file_data);
   Destroy_Mutexes_and_cond();
-
-
 }
