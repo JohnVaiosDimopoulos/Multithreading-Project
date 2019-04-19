@@ -13,7 +13,7 @@ struct Seat{
 
 struct Mutexes_and_cond{
   pthread_mutex_t Available_telephone;
-  pthread_mutex_t Bank_account_available;
+  pthread_mutex_t Update_income;
   pthread_mutex_t Update_transaction_counter;
   pthread_mutex_t Update_wait_time;
   pthread_mutex_t Update_throughput_time;
@@ -24,11 +24,13 @@ struct Mutexes_and_cond{
 
 struct Global_data {
   Seat* seats_array;
+  int total_transactions;
+  int total_num_of_seats;
   int telephones_available;
-  int Money_collected;
+  int total_income;
   int seats_available;
   double total_wait_time;
-  double total_through_put_time;
+  double total_throughput_time;
 
 }typedef Global_data;
 

@@ -3,7 +3,7 @@ CFLAGS = -pthread
 CC = gcc
 OBJDIR = objects_and_exec
 vpath %.c Util main Global_structs Pthread_functions
-objects = $(addprefix $(OBJDIR)/, main.o initialization_functions.o Pthread_functions.o)
+objects = $(addprefix $(OBJDIR)/, main.o initialization_functions.o Pthread_functions.o Statistics.o List.o)
 
 make_dir:
 	mkdir $(OBJDIR)

@@ -1,35 +1,220 @@
 #include "Pthread_functions.h"
-#include "Thread_input_data.h"
+#include "Thread_data_structs.h"
 #include "../Util/Initialization_Data.h"
 #include "../Global_structs/Global_Structs.h"
+#include "../Util/List.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+void Lock_on_mutex(pthread_mutex_t *mutex) {
+  if (pthread_mutex_lock(mutex)) {
+    printf("locking on mutex failed\n");
+    exit(-1);
+  }
+}
+
+void Unlock_on_mutex(pthread_mutex_t* mutex){
+  if(pthread_mutex_unlock(mutex)){
+    printf("unlocking on mutex failed\n");
+    exit(-1);
+  }
+}
+
+int Is_Theater_full(){
+  Lock_on_mutex(&mutexes_and_cond.Update_seats);
+  for(int i=0;i<global_data.total_num_of_seats;i++){
+    if(global_data.seats_array[i].curr_status==FREE) {
+      Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+      return 0;
+    }
+  }
+  Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+  return 1;
+}
+
+int Check_if_there_are_enough_seats(int num_of_seats_to_book){
+
+  Lock_on_mutex(&mutexes_and_cond.Update_seats);
+  if(num_of_seats_to_book<global_data.seats_available) {
+    Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+    return  0;
+  }
+  Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+
+  return 1;
+}
+
+void Wait_on_cond(pthread_cond_t* cond,pthread_mutex_t* mutex){
+  if(pthread_cond_wait(cond,mutex)){
+    printf("wait on condition failed\n");
+    exit(-1);
+  }
+}
+
+int calculate_random_value(int min, int max){
+  return rand()%(max-min+1)+min;
+}
+
+double Calc_time_pasted(struct timespec start,struct timespec end){
+}
+
+void Print_Exit_message(Server_return_data* transaction_info){
+
+  if(transaction_info->error_num==0){
+    printf("=================\n");
+    printf("Transaction with id:%d succesfull\n",transaction_info->transaction_id);
+    printf("Seats Booked:");
+    Print_list(transaction_info->seat_list);
+    printf("Total cost:%d\n",transaction_info->transaction_cost);
+    printf("=================\n");
+
+  }
+  else if(transaction_info->error_num==1){
+    printf("=================\n");
+    printf("Transaction failed due to credit card error\n");
+    printf("=================\n");
+  }
+  else if(transaction_info->error_num==2){
+    printf("=================\n");
+    printf("Transaction failed due to lack of seats\n");
+    printf("=================\n");
+  }
+  else if(transaction_info->error_num==3){
+    printf("=================\n");
+    printf("Trasaction failed because the theater is full\n");
+    printf("=================\n");
+  }
+
+}
+
+List* Book_Seats(int num_of_seats_to_book,int client_id){
+
+  List* seat_list = malloc(sizeof(List));
+  Lock_on_mutex(&mutexes_and_cond.Update_seats);
+  int seats_left=num_of_seats_to_book;
+  for(int i =0;i<global_data.total_num_of_seats && seats_left!=0 ;i++){
+    if(global_data.seats_array[i].curr_status==FREE){
+      global_data.seats_array[i].curr_status=RESERVED;
+      global_data.seats_available--;
+      global_data.seats_array[i].Client_num=client_id;
+      seats_left--;
+      Insert_on_front(seat_list,global_data.seats_array[i].Seat_num);
+    }
+  }
+  Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+
+  return seat_list;
+}
+
+int Check_if_credit_fails(int succes_propabillity){
+
+  int random_number = calculate_random_value(0,100);
+  if(random_number<succes_propabillity)
+    return 0;
+  return 1;
+}
+
+void Update_total_income(int transaction_cost){
+  Lock_on_mutex(&mutexes_and_cond.Update_income);
+  global_data.total_income +=transaction_cost;
+  Unlock_on_mutex(&mutexes_and_cond.Update_income);
+}
+
+void Update_total_transactions(){
+  Lock_on_mutex(&mutexes_and_cond.Update_transaction_counter);
+  global_data.total_transactions++;
+  Unlock_on_mutex(&mutexes_and_cond.Update_transaction_counter);
+}
+
+void simulate_wait_time(const thread_arg *data) {
+  int seconds_to_sleep = calculate_random_value(data->wait_low, data->wait_high);
+  sleep(seconds_to_sleep);
+}
+
+Server_return_data* Serve_client(thread_arg* data, int num_of_seats_to_book){
+
+  Server_return_data* transaction_info = malloc(sizeof(Server_return_data));
+  transaction_info->seat_list=NULL;
+  simulate_wait_time(data);
+
+  if(Is_Theater_full()){
+    transaction_info->error_num=3;
+    return transaction_info;
+  }
+
+  if(Check_if_there_are_enough_seats(num_of_seats_to_book)){
+    transaction_info->error_num=2;
+    return transaction_info;
+  }
+
+  if(Check_if_credit_fails(data->success_prob)){
+    transaction_info->error_num=1;
+    return transaction_info;
+  }
+
+  transaction_info->seat_list=Book_Seats(num_of_seats_to_book,data->client_id);
+  transaction_info->transaction_cost = num_of_seats_to_book*data->seat_cost;
+  Update_total_income(transaction_info->transaction_cost);
+  transaction_info->transaction_id=(global_data.total_transactions+1);
+  Update_total_transactions();
+
+  return transaction_info;
+}
+
 void* thread(void *arg){
   //start clock for through_put;
   thread_arg* data = (thread_arg*)arg;
-  pthread_mutex_lock(&mutexes_and_cond.Writing_in_stdout);
-  printf("I'am thread: %d and will sleep\n",data->client_id);
-  pthread_mutex_unlock(&mutexes_and_cond.Writing_in_stdout);
+  struct timespec wait_start,wait_end,throughput_start,throughput_end;
 
-  //1.get number of seats to ask for
-  //2.tart timer for wait
-  //3.lock_for_telephone
-  //4.while(avail_teleph)
-    //wait_on_cond
-  //5.stop timer for  wait
-  //6.tel_avail--
-  //7.call function
-  //8.end_clock for thtouput
-  //9.calc_time
-    //lock_thorouput_time_mutex
-    //update_time
-    //unlock_thoroughput_time_mutex
-  //10.same for wait time
-  //11.lock_stdin
-  //12.print_message
-  //13.unlock_stdin
+  //start clock for thtroughput_time;
+  clock_gettime(CLOCK_REALTIME,&throughput_start);
+
+  //get a random number of the seats to book
+  int num_of_seats_to_book = calculate_random_value(data->S_low, data->S_high);
+
+  //start_clock for wait_time
+  clock_gettime(CLOCK_REALTIME,&wait_start);
+  Lock_on_mutex(&mutexes_and_cond.Available_telephone);
+  while (global_data.telephones_available==0){
+    Wait_on_cond(&mutexes_and_cond.Telephone_cond,&mutexes_and_cond.Available_telephone);
+  }
+  global_data.telephones_available--;
+  Unlock_on_mutex(&mutexes_and_cond.Available_telephone);
+  Server_return_data* transaction_info = Serve_client(data,num_of_seats_to_book);
+
+
+
+  //stop clock for wait_time;
+  clock_gettime(CLOCK_REALTIME,&wait_end);
+
+
+
+  pthread_cond_signal(&mutexes_and_cond.Telephone_cond);
+  global_data.telephones_available++;
+
+
+
+  //stop clock for throughput time
+  clock_gettime(CLOCK_REALTIME,&throughput_end);
+
+  //update total throughput_time;
+  Lock_on_mutex(&mutexes_and_cond.Update_throughput_time);
+  global_data.total_throughput_time=+Calc_time_pasted(throughput_start,throughput_end);
+  Unlock_on_mutex(&mutexes_and_cond.Update_throughput_time);
+
+  //update total wait_time;
+  Lock_on_mutex(&mutexes_and_cond.Update_wait_time);
+  global_data.total_wait_time=+Calc_time_pasted(wait_start,wait_end);
+  Unlock_on_mutex(&mutexes_and_cond.Update_wait_time);
+
+  //print message
+  Lock_on_mutex(&mutexes_and_cond.Writing_in_stdout);
+  Print_Exit_message(transaction_info);
+  Unlock_on_mutex(&mutexes_and_cond.Writing_in_stdout);
+
+  Free_list(transaction_info->seat_list);
+  free(transaction_info);
   free(data);
   pthread_exit(NULL);
 }

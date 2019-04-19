@@ -108,7 +108,7 @@ void Init_cond_and_check(pthread_cond_t cond){
 void Initialize_mutexes(struct Mutexes_and_cond* mutexes_and_cond){
 
   Init_mutex_and_check(mutexes_and_cond->Available_telephone);
-  Init_mutex_and_check(mutexes_and_cond->Bank_account_available);
+  Init_mutex_and_check(mutexes_and_cond->Update_income);
   Init_mutex_and_check(mutexes_and_cond->Update_transaction_counter);
   Init_mutex_and_check(mutexes_and_cond->Update_wait_time);
   Init_mutex_and_check(mutexes_and_cond->Update_throughput_time);
@@ -134,7 +134,9 @@ void Initialize_global_data(struct Global_data* global_data,Init_file_data file_
   global_data->telephones_available=file_data.Telephones_number;
   global_data->seats_available=file_data.Seats_number;
   global_data->total_wait_time=0.0;
-  global_data->total_through_put_time=0.0;
+  global_data->total_throughput_time=0.0;
+  global_data->total_num_of_seats=file_data.Seats_number;
+  global_data->total_transactions=0;
 }
 
 
