@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+//==MUTEX/Cond-FUNCTIONS==//
 void Lock_on_mutex(pthread_mutex_t *mutex) {
+
   if (pthread_mutex_lock(mutex)) {
     printf("locking on mutex failed\n");
     exit(-1);
@@ -21,7 +23,17 @@ void Unlock_on_mutex(pthread_mutex_t* mutex){
   }
 }
 
+void Wait_on_cond(pthread_cond_t* cond,pthread_mutex_t* mutex){
+  if(pthread_cond_wait(cond,mutex)){
+    printf("wait on condition failed\n");
+    exit(-1);
+  }
+}
+
+
+//==Utility functions==//
 int Is_Theater_full(){
+  // if theater if full return 1 else return 0
   Lock_on_mutex(&mutexes_and_cond.Update_seats);
   for(int i=0;i<global_data.total_num_of_seats;i++){
     if(global_data.seats_array[i].curr_status==FREE) {
@@ -35,6 +47,7 @@ int Is_Theater_full(){
 
 int Check_if_there_are_enough_seats(int num_of_seats_to_book){
 
+  // if there are enough seats return 0 else return 1
   Lock_on_mutex(&mutexes_and_cond.Update_seats);
   if(num_of_seats_to_book<=global_data.seats_available) {
     Unlock_on_mutex(&mutexes_and_cond.Update_seats);
@@ -45,24 +58,19 @@ int Check_if_there_are_enough_seats(int num_of_seats_to_book){
   return 1;
 }
 
-void Wait_on_cond(pthread_cond_t* cond,pthread_mutex_t* mutex){
-  if(pthread_cond_wait(cond,mutex)){
-    printf("wait on condition failed\n");
-    exit(-1);
-  }
-}
-
 int calculate_random_value(int min, int max){
   return rand()%(max-min+1)+min;
 }
 
 double Calc_time_pasted(struct timespec start,struct timespec end){
+
   int long diff_in_ms;
   diff_in_ms=(end.tv_sec-start.tv_sec)*100000 +(end.tv_nsec-start.tv_nsec)/1000;
   return diff_in_ms;
 }
 
 void Print_Exit_message(Server_return_data* transaction_info){
+
 
   if(transaction_info->error_num==0){
     printf("=================\n");
@@ -73,6 +81,7 @@ void Print_Exit_message(Server_return_data* transaction_info){
     printf("=================\n");
 
   }
+
   else if(transaction_info->error_num==1){
     printf("=================\n");
     printf("Transaction failed due to credit card error\n");
@@ -91,34 +100,17 @@ void Print_Exit_message(Server_return_data* transaction_info){
 
 }
 
-List* Book_Seats(int num_of_seats_to_book,int client_id){
-
-  List* seat_list = malloc(sizeof(List));
-  Lock_on_mutex(&mutexes_and_cond.Update_seats);
-  int seats_left=num_of_seats_to_book;
-  for(int i =0;i<global_data.total_num_of_seats && seats_left!=0 ;i++){
-    if(global_data.seats_array[i].curr_status==FREE){
-      global_data.seats_array[i].curr_status=RESERVED;
-      global_data.seats_available--;
-      global_data.seats_array[i].Client_num=client_id;
-      seats_left--;
-      Insert_on_front(seat_list,global_data.seats_array[i].Seat_num);
-    }
-  }
-  Unlock_on_mutex(&mutexes_and_cond.Update_seats);
-
-  return seat_list;
-}
-
 int Check_if_credit_fails(int succes_propabillity){
 
   int random_number = calculate_random_value(0,100);
+  // if the card fails return 1 else return 0
   if(random_number<succes_propabillity)
     return 0;
   return 1;
 }
 
 void Update_total_income(int transaction_cost){
+
   Lock_on_mutex(&mutexes_and_cond.Update_income);
   global_data.total_income +=transaction_cost;
   Unlock_on_mutex(&mutexes_and_cond.Update_income);
@@ -131,8 +123,35 @@ void Update_total_transactions(){
 }
 
 void simulate_wait_time(const thread_arg *data) {
+
   int seconds_to_sleep = calculate_random_value(data->wait_low, data->wait_high);
   sleep(seconds_to_sleep);
+}
+
+
+//==SERVER-FUNCITONS==//
+List* Book_Seats(int num_of_seats_to_book,int client_id){
+
+  // we return a list with the seats that we book
+  List* seat_list = malloc(sizeof(List));
+
+  Lock_on_mutex(&mutexes_and_cond.Update_seats);
+  // keep track of the seats left to find
+  int seats_left=num_of_seats_to_book;
+  for(int i =0;i<global_data.total_num_of_seats && seats_left!=0 ;i++){
+    //if we find a free seat
+    if(global_data.seats_array[i].curr_status==FREE){
+      // we take it
+      global_data.seats_array[i].curr_status=RESERVED;
+      global_data.seats_available--;
+      global_data.seats_array[i].Client_num=client_id;
+      seats_left--;
+      Insert_on_front(seat_list,global_data.seats_array[i].Seat_num);
+    }
+  }
+  Unlock_on_mutex(&mutexes_and_cond.Update_seats);
+
+  return seat_list;
 }
 
 Server_return_data* Serve_client(thread_arg* data, int num_of_seats_to_book){
@@ -165,12 +184,14 @@ Server_return_data* Serve_client(thread_arg* data, int num_of_seats_to_book){
   return transaction_info;
 }
 
+
+//==Thread-functions==//
 void* thread(void *arg){
-  //start clock for through_put;
+
   thread_arg* data = (thread_arg*)arg;
   struct timespec wait_start,wait_end,throughput_start,throughput_end;
 
-  //start clock for thtroughput_time;
+  //start clock for throughput_time;
   clock_gettime(CLOCK_REALTIME,&throughput_start);
 
   //get a random number of the seats to book
@@ -185,11 +206,10 @@ void* thread(void *arg){
   global_data.telephones_available--;
   Unlock_on_mutex(&mutexes_and_cond.Available_telephone);
   clock_gettime(CLOCK_REALTIME,&wait_end);
+
   Server_return_data* transaction_info = Serve_client(data,num_of_seats_to_book);
   pthread_cond_signal(&mutexes_and_cond.Telephone_cond);
   global_data.telephones_available++;
-
-
 
   //stop clock for throughput time
   clock_gettime(CLOCK_REALTIME,&throughput_end);
@@ -212,7 +232,6 @@ void* thread(void *arg){
   if(transaction_info->seat_list!=NULL){
     free(transaction_info->seat_list);
   }
-
   free(transaction_info);
   free(data);
   pthread_exit(NULL);
@@ -253,3 +272,30 @@ void Wait_for_clients_to_finish(pthread_t* clients_array,int num_of_clients){
 }
 
 
+
+//==DELETING FUNCTIONS==//
+void Destroy_Mutex(pthread_mutex_t* mutex){
+  if(pthread_mutex_destroy(mutex)){
+    printf("error while destroying mutex\n");
+    exit(-1);
+  }
+}
+
+void Destroy_cond(pthread_cond_t* cond){
+  if(pthread_cond_destroy(cond)){
+    printf("error while destroying cond\n");
+    exit(-1);
+  }
+}
+
+void Destroy_Mutexes_and_cond(){
+  Destroy_Mutex(&mutexes_and_cond.Update_transaction_counter);
+  Destroy_Mutex(&mutexes_and_cond.Update_income);
+  Destroy_Mutex(&mutexes_and_cond.Update_seats);
+  Destroy_Mutex(&mutexes_and_cond.Update_wait_time);
+  Destroy_Mutex(&mutexes_and_cond.Update_throughput_time);
+  Destroy_Mutex(&mutexes_and_cond.Available_telephone);
+  Destroy_Mutex(&mutexes_and_cond.Writing_in_stdout);
+  Destroy_cond(&mutexes_and_cond.Telephone_cond);
+
+}

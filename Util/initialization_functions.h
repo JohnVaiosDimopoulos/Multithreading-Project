@@ -22,5 +22,4 @@ void Initialize_mutexes(struct Mutexes_and_cond* mutexes_and_cond);
 void Initialize_global_data(struct Global_data* global_data,struct Init_file_data file_data);
 
 
-
 #endif //KOUVALAME_XATZO_INITIALIZATION_FUNCTIONS_H

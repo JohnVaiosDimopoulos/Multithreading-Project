@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 void Prit_seats_array(Seat* seat_array,int num_of_seats){
+
   for(int i =0;i<num_of_seats;i++){
     printf("===SEAT:%d ",seat_array[i].Seat_num);
     if(seat_array[i].Client_num==-1)

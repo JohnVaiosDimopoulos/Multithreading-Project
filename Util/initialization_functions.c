@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 FILE *Open_file();
 
@@ -83,11 +84,11 @@ Init_file_data Read_data_from_file(FILE* Initialization_file){
 }
 
 Init_file_data Get_data_from_file(){
+
   FILE* Initialization_file = Open_file();
-  return Read_data_from_file(Initialization_file);
-
-
-
+  Init_file_data file_data =Read_data_from_file(Initialization_file);
+  fclose(Initialization_file);
+  return file_data;
 }
 
 void Init_mutex_and_check(pthread_mutex_t mutex){
