@@ -36,7 +36,7 @@ int Is_Theater_full(){
 int Check_if_there_are_enough_seats(int num_of_seats_to_book){
 
   Lock_on_mutex(&mutexes_and_cond.Update_seats);
-  if(num_of_seats_to_book<global_data.seats_available) {
+  if(num_of_seats_to_book<=global_data.seats_available) {
     Unlock_on_mutex(&mutexes_and_cond.Update_seats);
     return  0;
   }
@@ -57,6 +57,9 @@ int calculate_random_value(int min, int max){
 }
 
 double Calc_time_pasted(struct timespec start,struct timespec end){
+  int long diff_in_ms;
+  diff_in_ms=(end.tv_sec-start.tv_sec)*100000 +(end.tv_nsec-start.tv_nsec)/1000;
+  return diff_in_ms;
 }
 
 void Print_Exit_message(Server_return_data* transaction_info){
@@ -181,15 +184,8 @@ void* thread(void *arg){
   }
   global_data.telephones_available--;
   Unlock_on_mutex(&mutexes_and_cond.Available_telephone);
-  Server_return_data* transaction_info = Serve_client(data,num_of_seats_to_book);
-
-
-
-  //stop clock for wait_time;
   clock_gettime(CLOCK_REALTIME,&wait_end);
-
-
-
+  Server_return_data* transaction_info = Serve_client(data,num_of_seats_to_book);
   pthread_cond_signal(&mutexes_and_cond.Telephone_cond);
   global_data.telephones_available++;
 
@@ -213,7 +209,10 @@ void* thread(void *arg){
   Print_Exit_message(transaction_info);
   Unlock_on_mutex(&mutexes_and_cond.Writing_in_stdout);
 
-  Free_list(transaction_info->seat_list);
+  if(transaction_info->seat_list!=NULL){
+    free(transaction_info->seat_list);
+  }
+
   free(transaction_info);
   free(data);
   pthread_exit(NULL);

@@ -40,17 +40,3 @@ void Print_list(List *list){
 }
 
 
-void Free_list(List* list){
-  if(list==NULL)
-    return;
-
-  List_node* current=list->head;
-  List_node* next;
-  while (current!=NULL){
-    next=current->next;
-    free(current);
-    current=next;
-  }
-  free(list);
-
-}

@@ -25,7 +25,7 @@ double Calculate_average_throughput_time(int num_of_clients){
 void Print_Stats(struct Argument_data data, struct Init_file_data file_data){
   Prit_seats_array(global_data.seats_array,file_data.Seats_number);
   printf("Total_income: %d\n",global_data.total_income);
-  printf("Average client wait_time: %lf \n",Calculate_average_wait_time(data.clients_num));
-  printf("Average client throughput time: %lf \n",Calculate_average_throughput_time(data.clients_num));
+  printf("Average client wait_time in milliseconds: %lf \n",Calculate_average_wait_time(data.clients_num));
+  printf("Average client throughput time in milliseconds: %lf \n",Calculate_average_throughput_time(data.clients_num));
 }
 

@@ -5,7 +5,7 @@
 #include "../Global_structs/Global_Structs.h"
 #include "../Util/Initialization_Data.h"
 #include "../Pthread_functions/Pthread_functions.h"
-#define MAX_THREADS 50
+#define MAX_THREADS 150
 
 
 
@@ -23,7 +23,5 @@ int main(int argc,char** argv) {
   pthread_t clients[data.clients_num];
   Start_Clients(clients,data.clients_num,file_data);
   Wait_for_clients_to_finish(clients,data.clients_num);
-  printf("%d\n",global_data.telephones_available);
-  printf("ALL THREADS ARE DONE\n");
   Print_Stats(data,file_data);
 }

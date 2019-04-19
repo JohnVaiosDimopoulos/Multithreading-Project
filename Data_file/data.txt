@@ -1,4 +1,4 @@
-seat_num = 250
+seat_num = 25
 tel_num = 8
 seat_low = 1
 seat_high = 5
